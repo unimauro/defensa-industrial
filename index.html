@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Industria para la Defensa · Tablero financiero (demo)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3ef;
+    --surface-1: #fcfcfb;
+    --border: #e2e0da;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #85837d;
+    --grid: #ebe9e4;
+    --accent: #7a1f2b;
+    --series-1: #2a78d6; /* SIMA-Perú */
+    --series-2: #eb6834; /* SIMA Iquitos */
+    --series-3: #1baf7a; /* FAME */
+    --series-4: #eda100; /* SEMAN */
+    --good: #1a7f37;
+    --critical: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--surface-0); color: var(--text-primary); }
+  header { background: var(--accent); color: #fff; padding: 20px 16px 18px; }
+  header .wrap, main { max-width: 1240px; margin: 0 auto; }
+  header small { opacity: .8; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; }
+  header h1 { margin: 4px 0 6px; font-size: 22px; line-height: 1.2; }
+  header p { margin: 0; opacity: .9; font-size: 14px; }
+  .badge { display: inline-block; background: rgba(255,255,255,.16); border-radius: 999px; padding: 2px 10px;
+           font-size: 12px; margin: 10px 6px 0 0; }
+  main { padding: 16px; }
+  h2 { font-size: 17px; margin: 26px 0 4px; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 12px; }
+  .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .g2 { grid-template-columns: repeat(2, 1fr); } .g4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .g4 { grid-template-columns: repeat(4, 1fr); } }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .co { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .kpi .l { color: var(--text-secondary); font-size: 12px; }
+  .kpi .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .kpi .d { font-size: 12px; color: var(--text-muted); }
+  .up { color: var(--good); } .down { color: var(--critical); }
+  .chart { height: 300px; }
+  @media (min-width: 640px) { .wide { grid-column: 1 / -1; } }
+  .main .chart { height: 380px; }
+  .main .ct { font-size: 1.1em; }
+  sup.r { color: var(--accent); font-weight: 700; cursor: help; }
+  .chart.sm { height: 240px; }
+  .ct { font-weight: 600; font-size: 14px; }
+  .cs { color: var(--text-secondary); font-size: 12px; margin-bottom: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 14px; font-size: 13px; color: var(--text-secondary); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 5px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 600; position: sticky; top: 0; background: var(--surface-1); }
+  td:first-child, th:first-child, td:nth-child(2), th:nth-child(2) { text-align: left; }
+  tr.partial td { color: var(--text-secondary); font-style: italic; }
+  td a { color: var(--series-1); }
+  .notes { color: var(--text-secondary); font-size: 13px; }
+  .notes li { margin-bottom: 6px; }
+  footer { color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 16px 30px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <small>Demo · Avance de trabajo</small>
+  <h1>Industria para la Defensa — Tablero financiero de las empresas del sector</h1>
+  <p>SIMA-Perú · SIMA Iquitos · FAME · SEMAN Perú. Tendencia anual 2019–2025 y avance al II trimestre 2026.</p>
+  <span class="badge">Fuente: FONAFE — Evaluación Presupuestal y Financiera</span>
+  <span class="badge" id="nfuentes"></span>
+</div></header>
+
+<main>
+  <h2>Cierre 2025 por empresa</h2>
+  <p class="sub">Variación respecto al cierre 2024. Montos en millones de soles.</p>
+  <div class="grid g4" id="cards"></div>
+
+  <h2>Rentabilidad y estructura financiera, 2019–2025</h2>
+  <div class="legend" id="legend"></div>
+  <div class="grid g2">
+    <div class="card"><div class="ct">ROE — Rentabilidad patrimonial</div><div class="cs">Utilidad neta / patrimonio, %</div><div class="chart" id="c_roe"></div></div>
+    <div class="card"><div class="ct">Margen neto</div><div class="cs">Utilidad neta / ingresos de actividades ordinarias, %</div><div class="chart" id="c_margen"></div></div>
+    <div class="card"><div class="ct">Liquidez corriente</div><div class="cs">Activo corriente / pasivo corriente, veces</div><div class="chart" id="c_liq"></div></div>
+    <div class="card"><div class="ct">Solvencia — autonomía patrimonial</div><div class="cs">Patrimonio / activo total, %</div><div class="chart" id="c_solv"></div></div>
+    <div class="card wide main"><div class="ct">Gestión — margen operativo</div><div class="cs">Utilidad operativa / ventas (ingresos de actividades ordinarias), %</div><div class="chart" id="c_mop"></div></div>
+  </div>
+
+  <h2>Ingresos, utilidad operativa, EBITDA y utilidad neta por empresa</h2>
+  <p class="sub">Millones de soles. Cada empresa en su propia escala (SIMA-Perú es ~10× las demás).</p>
+  <div class="grid g2" id="multiples"></div>
+
+  <h2>Avance 2026 (acumulado a junio)</h2>
+  <p class="sub">Flujos acumulados enero–junio, sin anualizar; los saldos (liquidez, solvencia) son al 30-jun-2026.</p>
+  <div class="grid g4" id="cards26"></div>
+
+  <h2>Tabla de datos</h2>
+  <p class="sub">Cada fila enlaza al informe EVA de FONAFE del que se tomó la cifra definitiva. Filas en cursiva = periodo parcial.</p>
+  <div class="card tablewrap"><table id="tabla"></table></div>
+
+  <h2>Notas metodológicas</h2>
+  <ul class="notes">
+    <li><b>Fuente única:</b> informes “Evaluación Presupuestal y Financiera” publicados por FONAFE en la sección Gestión de cada empresa (cierre anual y II trimestre 2026). Se toma la columna de <i>ejecución</i>, no la de marco/meta.</li>
+    <li><b>Cifra definitiva:</b> cada año se toma de la columna “Ejecución año anterior” del cierre del año siguiente, que incorpora los ajustes posteriores al cierre (el cierre 2025 aún no tiene versión siguiente). Contrastados 21 años-empresa: solo <b>FAME 2019</b> fue reexpresada (gasto por impuesto 78,636 → 515,806; utilidad neta 517,772 → <b>80,602</b>), marcada con <sup class="r">R</sup>.</li>
+    <li><b>Gestión:</b> margen operativo = ganancia (pérdida) operativa / total de ingresos de actividades ordinarias.</li>
+    <li><b>Control de calidad:</b> el ROE calculado (utilidad neta / patrimonio al cierre) coincide con el ROE que reporta el propio FONAFE en todos los periodos donde ambos existen (salvo FAME 2019, cuyo ROE de FONAFE es anterior a la reexpresión).</li>
+    <li><b>EBITDA:</b> es el valor reportado por FONAFE en “Principales indicadores”; no se recalcula. Sin dato para SIMA Iquitos 2019 (reportó solo margen EBITDA) ni al II trim. 2026.</li>
+    <li><b>SEMAN</b> figura en los informes FONAFE desde 2022; no hay serie 2019–2021 en esta fuente.</li>
+    <li>Estos informes son de gestión (no auditados). Para años cerrados pueden cruzarse con los EE.FF. auditados de cada empresa.</li>
+  </ul>
+</main>
+<footer>Elaborado por Carlos Cárdenas · Datos: FONAFE · Versión demo, octubre 2026</footer>
+
+<script>
+const ORDEN = ["sima", "sima_iquitos", "fame", "seman"];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COLOR = { sima: css("--series-1"), sima_iquitos: css("--series-2"), fame: css("--series-3"), seman: css("--series-4") };
+const CORTO = { sima: "SIMA-Perú", sima_iquitos: "SIMA Iquitos", fame: "FAME", seman: "SEMAN" };
+const MM = v => v == null ? null : v / 1e6;
+const fmt = (v, d = 1) => v == null ? "—" : v.toLocaleString("es-PE", { minimumFractionDigits: d, maximumFractionDigits: d });
+const AXIS = { axisLine: { lineStyle: { color: css("--border") } }, axisTick: { show: false },
+               axisLabel: { color: css("--text-secondary"), fontSize: 11 }, splitLine: { lineStyle: { color: css("--grid") } } };
+
+fetch("data.json").then(r => r.json()).then(D => {
+  const F = D.filas;
+  const get = (e, p) => F.find(f => f.empresa === e && f.periodo === p);
+  const anios = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
+  document.getElementById("nfuentes").textContent = `${F.length} informes procesados`;
+
+  // Leyenda compartida
+  document.getElementById("legend").innerHTML = ORDEN.map(e =>
+    `<span><i class="dot" style="background:${COLOR[e]}"></i>${D.empresas[e]}</span>`).join("");
+
+  // Tarjetas cierre 2025
+  const delta = (a, b, pp) => {
+    if (a == null || b == null) return "";
+    const d = pp ? a - b : (b === 0 ? null : (a - b) / Math.abs(b) * 100);
+    if (d == null) return "";
+    return `<span class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "▲" : "▼"} ${fmt(Math.abs(d))}${pp ? " pp" : "%"}</span> vs 2024`;
+  };
+  const card = (e, c, prev, titulo) => `
+    <div class="card"><div class="co"><i class="dot" style="background:${COLOR[e]}"></i>${D.empresas[e]}</div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Ingresos</div><div class="v">S/ ${fmt(MM(c.ingresos))}</div><div class="d">${prev ? delta(c.ingresos, prev.ingresos) : "MM"}</div></div>
+      <div class="kpi"><div class="l">Utilidad neta</div><div class="v">S/ ${fmt(MM(c.utilidad_neta))}</div><div class="d">${prev ? delta(c.utilidad_neta, prev.utilidad_neta) : "MM"}</div></div>
+      <div class="kpi"><div class="l">Margen operativo</div><div class="v">${fmt(c.margen_operativo)}%</div><div class="d">${prev ? delta(c.margen_operativo, prev.margen_operativo, true) : "U. operativa / ventas"}</div></div>
+      <div class="kpi"><div class="l">${titulo ? "ROE acumulado" : "ROE"}</div><div class="v">${fmt(c.roe)}%</div><div class="d">${prev ? delta(c.roe, prev.roe, true) : "UN / patrimonio, sin anualizar"}</div></div>
+      <div class="kpi"><div class="l">Liquidez corriente</div><div class="v">${fmt(c.liquidez_corriente, 2)}</div><div class="d">${prev ? delta(c.liquidez_corriente, prev.liquidez_corriente) : "veces"}</div></div>
+    </div></div>`;
+  document.getElementById("cards").innerHTML = ORDEN.map(e => card(e, get(e, "2025-FY"), get(e, "2024-FY"))).join("");
+  document.getElementById("cards26").innerHTML = ORDEN.map(e => card(e, get(e, "2026-Q2"), null, true)).join("");
+
+  // Líneas comparativas
+  const lineas = (id, campo, unidad, dec = 1) => {
+    const ch = echarts.init(document.getElementById(id), null, { renderer: "svg" });
+    ch.setOption({
+      grid: { left: 44, right: 78, top: 14, bottom: 26 },
+      tooltip: { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--text-muted") } },
+                 valueFormatter: v => v == null ? "sin dato" : fmt(v, dec) + unidad },
+      xAxis: { type: "category", data: anios.map(String), boundaryGap: false, ...AXIS, splitLine: { show: false } },
+      yAxis: { type: "value", ...AXIS, axisLabel: { ...AXIS.axisLabel, formatter: v => fmt(v, 0) + unidad } },
+      series: ORDEN.map(e => ({
+        name: CORTO[e], type: "line", connectNulls: false, symbol: "circle", symbolSize: 7,
+        lineStyle: { width: 2, color: COLOR[e] }, itemStyle: { color: COLOR[e], borderColor: css("--surface-1"), borderWidth: 2 },
+        data: anios.map(a => { const f = get(e, `${a}-FY`); return f ? f[campo] : null; }),
+        endLabel: { show: true, formatter: p => CORTO[e], color: css("--text-secondary"), fontSize: 11 },
+        labelLayout: { moveOverlap: "shiftY" },
+        markLine: ["roe", "margen_neto", "margen_operativo"].includes(campo) ? { silent: true, symbol: "none", data: [{ yAxis: 0 }],
+          lineStyle: { color: css("--text-muted"), type: "solid", width: 1 }, label: { show: false } } : undefined,
+      })),
+    });
+    return ch;
+  };
+  const charts = [
+    lineas("c_roe", "roe", "%"), lineas("c_mop", "margen_operativo", "%"), lineas("c_margen", "margen_neto", "%"),
+    lineas("c_liq", "liquidez_corriente", "×", 2), lineas("c_solv", "solvencia", "%"),
+  ];
+
+  // Small multiples por empresa
+  const mult = document.getElementById("multiples");
+  ORDEN.forEach(e => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `<div class="co"><i class="dot" style="background:${COLOR[e]}"></i>${D.empresas[e]}</div><div class="chart sm"></div>`;
+    mult.appendChild(div);
+    const ch = echarts.init(div.querySelector(".chart"), null, { renderer: "svg" });
+    const serie = c => anios.map(a => { const f = get(e, `${a}-FY`); return f ? MM(f[c]) : null; });
+    const tonos = ["#b5b3ad", "#6b6a66", COLOR[e], "#2b2a28"];
+    ch.setOption({
+      grid: { left: 52, right: 10, top: 30, bottom: 24 },
+      legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: css("--text-secondary"), fontSize: 11 } },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: v => v == null ? "sin dato" : "S/ " + fmt(v) + " MM" },
+      xAxis: { type: "category", data: anios.map(String), ...AXIS, splitLine: { show: false } },
+      yAxis: { type: "value", ...AXIS, axisLabel: { ...AXIS.axisLabel, formatter: v => fmt(v, 0) } },
+      series: [["Ingresos", "ingresos"], ["Utilidad operativa", "utilidad_operativa"], ["EBITDA", "ebitda_fonafe"], ["Utilidad neta", "utilidad_neta"]].map(([n, c], i) => ({
+        name: n, type: "bar", barGap: "12%", barMaxWidth: 12, data: serie(c),
+        itemStyle: { color: tonos[i], borderRadius: [3, 3, 0, 0] },
+      })),
+    });
+    charts.push(ch);
+  });
+  addEventListener("resize", () => charts.forEach(c => c.resize()));
+
+  // Tabla
+  const cols = [["Empresa", f => CORTO[f.empresa]], ["Periodo", f => f.parcial ? `Ene–${f.periodo.endsWith("Q1") ? "mar" : "jun"} ${f.anio}` : `${f.anio}`],
+    ["Ingresos", f => fmt(MM(f.ingresos))], ["Util. operativa", f => fmt(MM(f.utilidad_operativa))], ["EBITDA", f => fmt(MM(f.ebitda_fonafe))],
+    ["Util. neta", f => fmt(MM(f.utilidad_neta), MM(Math.abs(f.utilidad_neta || 0)) < 1 ? 2 : 1) + (f.reexpresado.includes("utilidad_neta") ? '<sup class="r" title="Cifra reexpresada por FONAFE en el cierre del año siguiente">R</sup>' : "")],
+    ["Activo", f => fmt(MM(f.activo))], ["Pasivo", f => fmt(MM(f.pasivo))], ["Patrimonio", f => fmt(MM(f.patrimonio))],
+    ["ROE %", f => fmt(f.roe)], ["ROA %", f => fmt(f.roa)], ["Mg. operativo %", f => fmt(f.margen_operativo)], ["Mg. neto %", f => fmt(f.margen_neto)],
+    ["Liquidez", f => fmt(f.liquidez_corriente, 2)], ["Pasivo/Pat.", f => fmt(f.endeudamiento, 2)], ["Solvencia %", f => fmt(f.solvencia)],
+    ["Fuente", f => f.url_definitiva
+      ? `<a href="${encodeURI(f.url_definitiva)}" target="_blank" rel="noopener">PDF ${f.anio + 1}</a>`
+      : `<a href="${encodeURI(f.url)}" target="_blank" rel="noopener">PDF</a>`]];
+  const filas = [...F].sort((a, b) => ORDEN.indexOf(a.empresa) - ORDEN.indexOf(b.empresa) || a.periodo.localeCompare(b.periodo));
+  document.getElementById("tabla").innerHTML =
+    `<thead><tr>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+    filas.map(f => `<tr class="${f.parcial ? "partial" : ""}">${cols.map(c => `<td>${c[1](f)}</td>`).join("")}</tr>`).join("") + "</tbody>";
+  document.querySelector("#tabla").insertAdjacentHTML("beforebegin", `<div class="cs">Montos en millones de soles.</div>`);
+});
+</script>
+</body>
+</html>
