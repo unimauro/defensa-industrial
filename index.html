@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Industria para la Defensa · Tablero financiero (demo)</title>
+<meta name="description" content="Tendencia de estados financieros y ratios (ROE, márgenes, liquidez, solvencia) de SIMA-Perú, SIMA Iquitos, FAME y SEMAN, 2019–2026. Fuente: FONAFE.">
+<meta name="theme-color" content="#7a1f2b">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="canonical" href="https://unimauro.github.io/defensa-industrial/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_PE">
+<meta property="og:url" content="https://unimauro.github.io/defensa-industrial/">
+<meta property="og:title" content="Industria para la Defensa — Tablero financiero">
+<meta property="og:description" content="Tendencia de estados financieros y ratios (ROE, márgenes, liquidez, solvencia) de SIMA-Perú, SIMA Iquitos, FAME y SEMAN, 2019–2026. Fuente: FONAFE.">
+<meta property="og:image" content="https://unimauro.github.io/defensa-industrial/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <style>
   :root {
@@ -37,6 +52,7 @@
   h2 { font-size: 17px; margin: 26px 0 4px; }
   .sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 12px; }
   .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  .grid > * { min-width: 0; }
   @media (min-width: 640px) { .g2 { grid-template-columns: repeat(2, 1fr); } .g4 { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1000px) { .g4 { grid-template-columns: repeat(4, 1fr); } }
   .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
@@ -50,6 +66,7 @@
   .chart { height: 300px; }
   @media (min-width: 640px) { .wide { grid-column: 1 / -1; } }
   .main .chart { height: 380px; }
+  @media (max-width: 639px) { .main .chart { height: 320px; } header h1 { font-size: 20px; } }
   .main .ct { font-size: 1.1em; }
   sup.r { color: var(--accent); font-weight: 700; cursor: help; }
   .chart.sm { height: 240px; }
@@ -194,7 +211,7 @@ fetch("data.json").then(r => r.json()).then(D => {
     const serie = c => anios.map(a => { const f = get(e, `${a}-FY`); return f ? MM(f[c]) : null; });
     const tonos = ["#b5b3ad", "#6b6a66", COLOR[e], "#2b2a28"];
     ch.setOption({
-      grid: { left: 52, right: 10, top: 30, bottom: 24 },
+      grid: { left: 52, right: 10, top: innerWidth < 480 ? 48 : 30, bottom: 24 },
       legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: css("--text-secondary"), fontSize: 11 } },
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: v => v == null ? "sin dato" : "S/ " + fmt(v) + " MM" },
       xAxis: { type: "category", data: anios.map(String), ...AXIS, splitLine: { show: false } },
